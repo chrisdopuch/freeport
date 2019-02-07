@@ -67,7 +67,11 @@ var rootCmd = &cobra.Command{
 		grepBytes, _ := ioutil.ReadAll(grepOut)
 		grepCmd.Wait()
 
-		fmt.Println(string(grepBytes))
+		if len(grepBytes) == 0 {
+			fmt.Println("No matching processes found")
+		} else {
+			fmt.Println(string(grepBytes))
+		}
 	},
 }
 

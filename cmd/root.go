@@ -37,42 +37,58 @@ var rootCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("Port(s):", strings.Join(args, " "))
 
-		netstatCmd := exec.Command("netstat.exe", "-a", "-n", "-o")
-		netstatOut, err := netstatCmd.Output()
-		if err != nil {
-			panic(err)
-		}
+		netstatOut := getNetstatOutput()
 
-		var grepArgs []string
-		grepArgs = make([]string, len(args)*2)
-		for i, s := range args {
-			grepArgs[i] = fmt.Sprintf("-e :%s", s)
-		}
-		for i, j := 0, 0; i < len(args)*2; i, j = i+2, j+1 {
-			grepArgs[i] = "-e"
-			grepArgs[i+1] = fmt.Sprintf(":%s", args[j])
-		}
-		grepCmd := exec.Command("grep", grepArgs...)
-		grepIn, inErr := grepCmd.StdinPipe()
-		if inErr != nil {
-			panic(inErr)
-		}
-		grepOut, outErr := grepCmd.StdoutPipe()
-		if outErr != nil {
-			panic(outErr)
-		}
-		grepCmd.Start()
-		grepIn.Write(netstatOut)
-		grepIn.Close()
-		grepBytes, _ := ioutil.ReadAll(grepOut)
-		grepCmd.Wait()
+		grepString := grepNetstatOutput(netstatOut, args)
 
-		if len(grepBytes) == 0 {
+		if len(grepString) == 0 {
 			fmt.Println("No matching processes found")
 		} else {
-			fmt.Println(string(grepBytes))
+			fmt.Println(grepString)
+		}
+
+		grepRows := strings.Split(grepString, "\n")
+		for _, l := range grepRows {
+			cols := strings.Fields(l)
+			fmt.Println(cols)
 		}
 	},
+}
+
+func getNetstatOutput() []byte {
+	netstatCmd := exec.Command("netstat.exe", "-a", "-n", "-o")
+	netstatOut, err := netstatCmd.Output()
+	if err != nil {
+		panic(err)
+	}
+	return netstatOut
+}
+
+func grepNetstatOutput(netstatOut []byte, args []string) string {
+	var grepArgs []string
+	grepArgs = make([]string, len(args)*2)
+	for i, s := range args {
+		grepArgs[i] = fmt.Sprintf("-e :%s", s)
+	}
+	for i, j := 0, 0; i < len(args)*2; i, j = i+2, j+1 {
+		grepArgs[i] = "-e"
+		grepArgs[i+1] = fmt.Sprintf(":%s", args[j])
+	}
+	grepCmd := exec.Command("grep", grepArgs...)
+	grepIn, inErr := grepCmd.StdinPipe()
+	if inErr != nil {
+		panic(inErr)
+	}
+	grepOut, outErr := grepCmd.StdoutPipe()
+	if outErr != nil {
+		panic(outErr)
+	}
+	grepCmd.Start()
+	grepIn.Write(netstatOut)
+	grepIn.Close()
+	grepBytes, _ := ioutil.ReadAll(grepOut)
+	grepCmd.Wait()
+	return string(grepBytes)
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.

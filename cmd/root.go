@@ -49,10 +49,19 @@ var rootCmd = &cobra.Command{
 
 		grepRows := strings.Split(grepString, "\n")
 		for _, l := range grepRows {
-			cols := strings.Fields(l)
-			fmt.Println(cols)
+			if len(l) > 0 {
+				cols := strings.Fields(l)
+				pid := cols[4]
+				fmt.Printf("Killing process id %s", pid)
+				terminateProcess(pid)
+			}
 		}
 	},
+}
+
+// Note: this will require you to run the terminal in administrator mode
+func terminateProcess(pid string) {
+
 }
 
 func getNetstatOutput() []byte {
